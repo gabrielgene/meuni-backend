@@ -3,14 +3,14 @@ import BaseDAO from '../baseDAO';
 
 export default class UserDAO extends BaseDAO {
   static _model = mongoose.model('User', new Schema({
+    token: String,
     user: String,
     pass: String,
     name: String,
-    image: String,
+    avatarUrl: String,
     course: String,
-    age: Number,
+    email: String,
     description: String,
-    activities: [String],
     directories: [String],
   }));
 

@@ -2,17 +2,20 @@ import uuidv4 from 'uuid/v4';
 import slugify from 'slugify';
 import express from 'express';
 import cors from 'cors';
+import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 
 import { connectDB } from './db';
 import User from './models/user';
 import Directory, { Rank } from './models/directory';
 import Post from './models/post';
-const app = express();
-
 // slugify('Calculo 1', { lower: true })
 
+const app = express();
 connectDB();
 
+app.use(cookieParser());
+app.use(bodyParser.json());
 app.use(cors());
 
 app.get('/', async (req, res) => {
@@ -35,24 +38,68 @@ app.get('/p', async (req, res) => {
 });
 
 app.get('/create-user', async (req, res) => {
-  const ravi = {
-    user: 'ravi',
-    pass: 'ravi123',
-    image: 'image.com.br',
-    description: 'teste de descrição',
-    course: 'engenharia-da-computacao',
-  };
+  const murtinha = {
+    user: 'murtinha',
+    pass: '123',
+    name: 'Murta',
+    avatarUrl: 'https://img.ibxk.com.br/2013/8/materias/1649968641515049.jpg',
+    course: 'Ciencia da Computação',
+    email: 'email@gmail.com',
+    description: 'gente fina',
+    directories: ['calculo1', 'calculo2'],
+  }
 
   const gene = {
     user: 'gene',
-    pass: 'gene123',
-    image: 'image.com.br',
-    description: 'teste de descrição',
-    course: 'ciencia-da-computacao',
+    pass: '123',
+    name: 'Gene',
+    avatarUrl: 'https://img.ibxk.com.br/2013/8/materias/1649968641515049.jpg',
+    course: 'Ciencia da Computação',
+    email: 'email@gmail.com',
+    description: 'gente fina',
+    directories: ['calculo1', 'calculo2'],
   };
-  User.create(ravi);
+  User.create(murtinha);
   User.create(gene);
   res.status(201).send('created');
+});
+
+app.post('/register', async (req, res) => {
+  const { body } = req;
+  const findUser = await User.findOne({ user: body.user });
+  if (findUser === null) {
+    const token = uuidv4();
+    const user = await User.create({ ...body, token });
+    res.cookie('userId', token, { maxAge: 900000 });
+    res.status(201).json(user);
+  }
+  res.status(200).json({ msg: 'user exist' });
+});
+
+app.post('/login', async (req, res) => {
+  const { body } = req;
+  const { user, pass } = body;
+  console.log(user, pass);
+  const findUser = await User.findOne({ user, pass });
+  console.log(findUser)
+  if (findUser === null) {
+    res.status(200).json({ msg: 'login error' });
+  } else {
+    res.cookie('userId', findUser.token, { maxAge: 900000 });
+    res.status(200).json(findUser);
+  }
+});
+
+app.get('/users', async (req, res) => {
+  const { query, cookies } = req;
+  const { userId } = cookies;
+  const { user, pass } = query;
+
+  // console.log(req)
+  // if (user === 'gene' && pass === '123') {
+  // res.cookie('userId', uuidv4(), { maxAge: 900000 });
+  // }
+  res.json(await User.remove());
 });
 
 app.get('/create-dir', async (req, res) => {
@@ -79,11 +126,6 @@ app.get('/create-dir', async (req, res) => {
   res.status(201).send('created');
 });
 
-app.get('/users', async (req, res) => {
-  res.json(await User.find());
-});
-
-
 app.get('/dirs/:course', async (req, res) => {
   res.json(await Directory.find({ course: req.params.course }));
 });
@@ -92,9 +134,9 @@ app.get('/dirs/:userId/:course', async (req, res) => {
   const { course, userId } = req.params;
   const dirsList = await Directory.find({ course });
   const dirs = dirsList.map(d => d._id);
-  res.json(User.addDirectories(userId, dirs)
+  res.json(User.addDirectories(userId, dirs));
 
-  res.json(dirsList);
+  // res.json(dirsList);
 });
 
 
