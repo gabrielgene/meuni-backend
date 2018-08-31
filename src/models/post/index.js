@@ -3,9 +3,13 @@ import BaseDAO from '../baseDAO';
 
 export default class PostDAO extends BaseDAO {
   static _model = mongoose.model('Post', new Schema({
-    postId: String,
+    name: String,
+    user: String,
+    avatarUrl: String,
     text: String,
-    directory: String,
-    userId: String,
+    folder: String,
+    folderName: String,
+    likes: Number,
+    comments: Number,
   }));
 }

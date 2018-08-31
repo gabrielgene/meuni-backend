@@ -69,7 +69,7 @@ app.get('/insert-dirs', async (req, res) => {
   dirs.forEach(d => {
     Directory.create(d);
   });
-  res.status(200).json({ msg: 'ok'})
+  res.status(200).json({ msg: 'ok' })
 });
 
 app.get('/dirs', async (req, res) => {
@@ -80,6 +80,83 @@ app.get('/delete-dirs', async (req, res) => {
   res.json(await Directory.remove());
 });
 
+app.get('/insert-posts', async (req, res) => {
+  const posts = [
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 1',
+      folder: 'calculo-1',
+      folderName: 'Calculo 1',
+      likes: 7,
+      comments: 4,
+    },
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 2',
+      folder: 'web',
+      folderName: 'Web',
+      likes: 3,
+      comments: 8,
+    },
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 3',
+      folder: 'calculo-1',
+      folderName: 'Calculo 1',
+      likes: 7,
+      comments: 11,
+    },
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 4',
+      folder: 'web',
+      folderName: 'Web',
+      likes: 8,
+      comments: 17,
+    },
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 5',
+      folder: 'redes',
+      folderName: 'Redes',
+      likes: 13,
+      comments: 27,
+    },
+    {
+      name: 'Gabriel Genê',
+      user: 'gene',
+      avatarUrl: 'https://avatars3.githubusercontent.com/u/19671668?s=460&v=4',
+      text: 'Texte de post 6',
+      folder: 'redes',
+      folderName: 'Redes',
+      likes: 3,
+      comments: 8,
+    },
+  ];
+
+  posts.forEach(p => {
+    Post.create(p);
+  });
+  res.status(200).json({ msg: 'ok' })
+});
+
+app.get('/posts-list', async (req, res) => {
+  res.json(await Post.find());
+});
+
+app.get('/delete-posts', async (req, res) => {
+  res.json(await Post.remove());
+});
 
 app.post('/register', async (req, res) => {
   const { body } = req;
@@ -108,6 +185,16 @@ app.post('/login', async (req, res) => {
 
 app.get('/dirs/:course', async (req, res) => {
   res.json(await Directory.find({ course: req.params.course }));
+});
+
+app.get('/posts', async (req, res) => {
+  const token = req.cookies.userId;
+  if (token !== undefined) {
+    const user = await User.findOne({ token });
+    const posts = await Post.find({ folder: user.directories });
+    res.status(200).json(posts)
+  }
+  res.status(200).json({ msg: 'ok' })
 });
 
 app.get('/dirs/:userId/:course', async (req, res) => {
