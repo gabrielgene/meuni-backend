@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
+import path from 'path';
 
 import { connectDB } from './db';
 import User from './models/user';
@@ -19,50 +20,66 @@ app.use(bodyParser.json());
 app.use(cors());
 
 app.get('/', async (req, res) => {
-  const posts = await Post.find(
-    {
-      directory: ['calculo-1', 'engenharia-de-software'],
-    }
-  );
-  res.json(posts);
+  res.sendfile(path.join(__dirname + '/index.html'));
 });
 
-app.get('/p', async (req, res) => {
-  const posts = await Post.pagination(
+app.get('/users', async (req, res) => {
+  res.json(await User.find());
+});
+
+app.get('/delete-users', async (req, res) => {
+  res.clearCookie('userId');
+  res.json(await User.remove());
+});
+
+app.get('/insert-dirs', async (req, res) => {
+  const dirs = [
     {
-      directory: ['calculo-1', 'engenharia-de-software'],
+      name: 'Calculo 1',
+      slug: 'calculo-1',
+      course: 'ciencia-da-computacao',
     },
-    1, 3
-  );
-  res.json(posts);
+    {
+      name: 'Redes',
+      slug: 'redes',
+      course: 'ciencia-da-computacao',
+    },
+    {
+      name: 'Web',
+      slug: 'web',
+      course: 'ciencia-da-computacao',
+    },
+    {
+      name: 'Penal',
+      slug: 'penal',
+      course: 'direito',
+    },
+    {
+      name: 'Civil',
+      slug: 'civil',
+      course: 'direito',
+    },
+    {
+      name: 'Criminal',
+      slug: 'criminal',
+      course: 'direito',
+    }
+  ];
+
+  dirs.forEach(d => {
+    Directory.create(d);
+  });
+  res.status(200).json({ msg: 'ok'})
 });
 
-app.get('/create-user', async (req, res) => {
-  const murtinha = {
-    user: 'murtinha',
-    pass: '123',
-    name: 'Murta',
-    avatarUrl: 'https://img.ibxk.com.br/2013/8/materias/1649968641515049.jpg',
-    course: 'Ciencia da Computação',
-    email: 'email@gmail.com',
-    description: 'gente fina',
-    directories: ['calculo1', 'calculo2'],
-  }
-
-  const gene = {
-    user: 'gene',
-    pass: '123',
-    name: 'Gene',
-    avatarUrl: 'https://img.ibxk.com.br/2013/8/materias/1649968641515049.jpg',
-    course: 'Ciencia da Computação',
-    email: 'email@gmail.com',
-    description: 'gente fina',
-    directories: ['calculo1', 'calculo2'],
-  };
-  User.create(murtinha);
-  User.create(gene);
-  res.status(201).send('created');
+app.get('/dirs', async (req, res) => {
+  res.json(await Directory.find());
 });
+
+app.get('/delete-dirs', async (req, res) => {
+  res.json(await Directory.remove());
+});
+
 
 app.post('/register', async (req, res) => {
   const { body } = req;
@@ -79,52 +96,15 @@ app.post('/register', async (req, res) => {
 app.post('/login', async (req, res) => {
   const { body } = req;
   const { user, pass } = body;
-  console.log(user, pass);
   const findUser = await User.findOne({ user, pass });
-  console.log(findUser)
   if (findUser === null) {
-    res.status(200).json({ msg: 'login error' });
+    res.status(201).json({ msg: 'login error' });
   } else {
     res.cookie('userId', findUser.token, { maxAge: 900000 });
     res.status(200).json(findUser);
   }
 });
 
-app.get('/users', async (req, res) => {
-  const { query, cookies } = req;
-  const { userId } = cookies;
-  const { user, pass } = query;
-
-  // console.log(req)
-  // if (user === 'gene' && pass === '123') {
-  // res.cookie('userId', uuidv4(), { maxAge: 900000 });
-  // }
-  res.json(await User.remove());
-});
-
-app.get('/create-dir', async (req, res) => {
-  const calculo1 = {
-    name: 'Calculo 1',
-    slug: 'caluclo-1',
-    course: 'engenharia-da-computacao',
-  }
-  const calculo2 = {
-    name: 'Calculo 2',
-    slug: 'calculo-2',
-    course: 'engenharia-da-computacao',
-  }
-
-  const desenvolvimento = {
-    name: 'Desenvolvimento Web',
-    slug: 'desenvolvimento-web',
-    course: 'ciencia-da-computacao',
-  }
-
-  Directory.create(calculo1);
-  Directory.create(calculo2);
-  Directory.create(desenvolvimento);
-  res.status(201).send('created');
-});
 
 app.get('/dirs/:course', async (req, res) => {
   res.json(await Directory.find({ course: req.params.course }));
