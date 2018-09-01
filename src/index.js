@@ -10,6 +10,7 @@ import { connectDB } from './db';
 import User from './models/user';
 import Directory, { Rank } from './models/directory';
 import Post from './models/post';
+import Reply from './models/reply';
 // slugify('Calculo 1', { lower: true })
 
 const app = express();
@@ -19,8 +20,77 @@ app.use(cookieParser());
 app.use(bodyParser.json());
 app.use(cors());
 
+const maxAge = 99999999999999;
+
+app.get('/post/:postId', async (req, res) => {
+  const { postId } = req.params;
+  const post = await Post.findById(postId);
+  res.status(200).json(post)
+});
+
+app.post('/register', async (req, res) => {
+  const { body } = req;
+  const findUser = await User.findOne({ user: body.user });
+  if (findUser === null) {
+    const token = uuidv4();
+    const user = await User.create({ ...body, token });
+    res.cookie('userId', token, { maxAge });
+    res.status(201).json(user);
+  }
+  res.status(200).json({ msg: 'user exist' });
+});
+
+app.post('/login', async (req, res) => {
+  const { body } = req;
+  const { user, pass } = body;
+  const findUser = await User.findOne({ user, pass });
+  if (findUser === null) {
+    res.status(201).json({ msg: 'login error' });
+  } else {
+    res.cookie('userId', findUser.token, { maxAge });
+    res.status(200).json(findUser);
+  }
+});
+
+app.get('/dirs/:course', async (req, res) => {
+  res.json(await Directory.find({ course: req.params.course }));
+});
+
+app.get('/posts', async (req, res) => {
+  const user = await User.findCurrentUser(req);
+  if (user) {
+    const posts = await Post.find({ folder: user.directories });
+    res.status(200).json(posts)
+  }
+  res.status(200).json({ error: true })
+});
+
+app.post('/reply', async (req, res) => {
+  const user = await User.findCurrentUser(req);
+  if (user) {
+    const { comment, postId } = req.body;
+    const { user, name, avatarUrl } = user;
+    await Reply.create({
+      postId,
+      comment,
+      user,
+      name,
+      avatarUrl,
+    });
+    res.status(200).json({ error: false });
+  }
+  res.status(200).json({ error: true });
+});
+
+
+// Utilities
 app.get('/', async (req, res) => {
   res.sendfile(path.join(__dirname + '/index.html'));
+});
+
+
+app.get('/replyList', async (req, res) => {
+  res.json(await Reply.find());
 });
 
 app.get('/users', async (req, res) => {
@@ -158,44 +228,6 @@ app.get('/delete-posts', async (req, res) => {
   res.json(await Post.remove());
 });
 
-app.post('/register', async (req, res) => {
-  const { body } = req;
-  const findUser = await User.findOne({ user: body.user });
-  if (findUser === null) {
-    const token = uuidv4();
-    const user = await User.create({ ...body, token });
-    res.cookie('userId', token, { maxAge: 900000 });
-    res.status(201).json(user);
-  }
-  res.status(200).json({ msg: 'user exist' });
-});
-
-app.post('/login', async (req, res) => {
-  const { body } = req;
-  const { user, pass } = body;
-  const findUser = await User.findOne({ user, pass });
-  if (findUser === null) {
-    res.status(201).json({ msg: 'login error' });
-  } else {
-    res.cookie('userId', findUser.token, { maxAge: 900000 });
-    res.status(200).json(findUser);
-  }
-});
-
-
-app.get('/dirs/:course', async (req, res) => {
-  res.json(await Directory.find({ course: req.params.course }));
-});
-
-app.get('/posts', async (req, res) => {
-  const token = req.cookies.userId;
-  if (token !== undefined) {
-    const user = await User.findOne({ token });
-    const posts = await Post.find({ folder: user.directories });
-    res.status(200).json(posts)
-  }
-  res.status(200).json({ msg: 'ok' })
-});
 
 app.get('/dirs/:userId/:course', async (req, res) => {
   const { course, userId } = req.params;
