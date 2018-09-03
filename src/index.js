@@ -65,6 +65,14 @@ app.get('/posts', async (req, res) => {
   res.status(200).json({ error: true })
 });
 
+app.get('/folder/posts/:folder', async (req, res) => {
+  const { folder } = req.params;
+  console.log('folder posts', folder);
+  const posts = await Post.find({ folder });
+
+  res.status(200).json(posts)
+});
+
 app.post('/reply', async (req, res) => {
   const user = await User.findCurrentUser(req);
   if (user) {
